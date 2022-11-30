@@ -11,9 +11,12 @@ let allCharacters = [1, 2];
 let p1;
 let p2;
 let turnIndicator;
-
-let buttons = Phaser.GameObjects.Image;
-let selectedButton = 0;
+let buttonSelector;
+let buttons = [];
+let selectedButtonIndex = 0;
+let battleSceneCursors;
+let grassTarget;
+let overlap;
 
 const mainGameConfig = {
   key: "mainGame",
@@ -71,18 +74,29 @@ function create() {
   );
   const layer1 = map.createLayer("Tile Layer 1", tileset, 0, 0);
 
+  grasses = this.physics.add.group();
+
+  for (let i = 0; i < 5; i++) {
+    grasses.createMultiple({
+      key: "grass",
+      repeat: 12,
+      setXY: { x: 100, y: 200 + 20 * i, stepX: 16 },
+    });
+  }
+
   player = this.physics.add.sprite(256, 256, "character");
   allCharacters[0] = new Character(100, 25);
 
   console.log(allCharacters);
   player.setCollideWorldBounds(true);
-
-  grassesActive = this.physics.add.group();
-  grasses = this.physics.add.group();
-  grasses.create(200, 200, "grass");
-  grasses.create(100, 200, "grass");
-  grassesActive.create(100, 200, "grass-active");
-  this.physics.add.overlap(player, grassesActive, loadBattleScene, null, this);
+  console.log("from create", this);
+  overlap = this.physics.add.overlap(
+    player,
+    grasses,
+    loadBattleScene,
+    null,
+    this
+  );
 
   this.anims.create({
     key: "right",
@@ -156,6 +170,7 @@ function battleScenePreload() {
   this.load.image("playerBattlePosition", "assets/playerBattlePosition.png");
   this.load.image("glassPanel", "assets/glassPanel.png");
   this.load.image("pikachu", "assets/pikachu.png");
+  this.load.image("cursorHand", "assets/cursor_pointer3D.png");
 }
 
 function battleSceneCreate() {
@@ -190,6 +205,7 @@ function battleSceneCreate() {
   this.add.text(attackButton.x, attackButton.y, "Attack").setOrigin(0.5);
   attackButton.setInteractive();
   attackButton.on("pointerdown", attack);
+  attackButton.on("selected", attack);
 
   const runButton = this.add
     .image(0.75 * 512, 400, "glassPanel")
@@ -197,9 +213,26 @@ function battleSceneCreate() {
   this.add.text(runButton.x, runButton.y, "Run").setOrigin(0.5);
   runButton.setInteractive();
   runButton.on("pointerdown", flee);
+  runButton.on("selected", flee);
+
+  buttons.push(attackButton);
+  buttons.push(runButton);
+
+  buttonSelector = this.add.image(0.5 * 512, 0.5 * 512, "cursorHand");
+
+  battleSceneCursors = this.input.keyboard.createCursorKeys();
+  selectButton(0);
 }
 
 function battleSceneUpdate() {
+  const upJustPressed = Phaser.Input.Keyboard.JustDown(battleSceneCursors.up);
+  const downJustPressed = Phaser.Input.Keyboard.JustDown(
+    battleSceneCursors.down
+  );
+  const spaceJustPressed = Phaser.Input.Keyboard.JustDown(
+    battleSceneCursors.space
+  );
+
   if (allCharacters[0] && allCharacters[0].hp <= 0) {
     console.log("Game over. You fainted.");
     allCharacters[player].hp = 100;
@@ -210,14 +243,26 @@ function battleSceneUpdate() {
     console.log("The opponent fainted.");
     this.scene.switch("mainGame");
   }
+
+  if (upJustPressed) {
+    selectNextButton(1);
+  } else if (downJustPressed) {
+    selectNextButton(-1);
+  } else if (spaceJustPressed) {
+    confirmSelection();
+  }
 }
 
 function loadBattleScene(player, grass) {
-  player.setVelocityX(0);
-  player.setVelocityY(0);
-  grass.disableBody(true, true);
-  console.log("loading battle scene", this.scene);
-  this.scene.switch("battleScene");
+  let prob = Math.random();
+  grassTarget = grass;
+  console.log(prob);
+  if (prob < 0.05) {
+    player.setVelocityX(0);
+    player.setVelocityY(0);
+    console.log("loading battle scene", this.scene);
+    this.scene.switch("battleScene");
+  }
 }
 
 async function attack() {
@@ -238,11 +283,51 @@ async function attack() {
   console.log("Your health is now: ", p1.hp);
 }
 
-function flee() {
+async function flee() {
+  console.log("destroying the overlap interaction");
+  overlap.destroy();
+  console.log(overlap);
   console.log("attempting to flee");
   this.scene.scene.switch("mainGame");
+  await wait(10);
+  const mainScene = this.scene.scene.manager.getScene("mainGame");
+  console.log("adding back overlapping feature");
+  overlap = mainScene.physics.add.overlap(
+    player,
+    grasses,
+    loadBattleScene,
+    null,
+    mainScene
+  );
 }
 
 async function wait(time) {
   await new Promise((resolve) => setTimeout(resolve, time * 1000));
+}
+
+function selectButton(index) {
+  const currentButton = buttons[selectedButtonIndex];
+  currentButton.setTint(0xffffff);
+  const button = buttons[index];
+  button.setTint(0x66ff7f);
+  buttonSelector.x = button.x + 200 * 0.35;
+  buttonSelector.y = button.y;
+  selectedButtonIndex = index;
+}
+
+function selectNextButton(number) {
+  let index = selectedButtonIndex + number;
+
+  if (index >= buttons.length) {
+    index = 0;
+  } else {
+    index = buttons.length - 1;
+  }
+
+  selectButton(index);
+}
+
+function confirmSelection() {
+  const button = buttons[selectedButtonIndex];
+  button.emit("selected");
 }
