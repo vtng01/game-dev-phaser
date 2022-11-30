@@ -5,8 +5,6 @@ let player;
 let cursors;
 let grasses;
 let grassesActive;
-let playerBattlePosition;
-let opponent;
 let allCharacters = [1, 2];
 let p1;
 let p2;
@@ -15,8 +13,8 @@ let buttonSelector;
 let buttons = [];
 let selectedButtonIndex = 0;
 let battleSceneCursors;
-let grassTarget;
-let overlap;
+let grassX = [];
+let grassY = [];
 
 const mainGameConfig = {
   key: "mainGame",
@@ -36,6 +34,7 @@ const myGame = new Game({
   type: Phaser.AUTO,
   width: 512,
   height: 512,
+  pixelArt: true,
   physics: {
     default: "arcade",
     arcade: {
@@ -52,12 +51,12 @@ function preload() {
     frameWidth: 16,
     frameHeight: 20,
   });
-  this.load.image("grass", "assets/grass-single.png", {
+  this.load.image("grass", "assets/grass-single.png");
+
+  this.load.spritesheet("grass-active", "assets/grass-active2.png", {
     frameWidth: 16,
     frameHeight: 16,
   });
-
-  this.load.image("grass-active", "assets/grass-active.png");
 
   cursors = this.input.keyboard.createCursorKeys();
 }
@@ -76,6 +75,13 @@ function create() {
 
   grasses = this.physics.add.group();
 
+  grassX = Array.from({ length: 12 }, (x, i) => 100 + 16 * i);
+
+  grassY = Array.from({ length: 5 }, (y, i) => 200 + 20 * i);
+
+  console.log(grassX);
+  console.log(grassY);
+
   for (let i = 0; i < 5; i++) {
     grasses.createMultiple({
       key: "grass",
@@ -84,19 +90,27 @@ function create() {
     });
   }
 
-  player = this.physics.add.sprite(256, 256, "character");
+  grassesActive = this.physics.add.group();
+  spawnActiveBrushes();
+
+  player = this.physics.add.sprite(400, 256, "character");
   allCharacters[0] = new Character(100, 25);
 
   console.log(allCharacters);
   player.setCollideWorldBounds(true);
   console.log("from create", this);
-  overlap = this.physics.add.overlap(
-    player,
-    grasses,
-    loadBattleScene,
-    null,
-    this
-  );
+
+  this.physics.add.overlap(player, grassesActive, loadBattleScene, null, this);
+
+  this.anims.create({
+    key: "grassActivity",
+    frames: this.anims.generateFrameNumbers("grass-active", {
+      start: 0,
+      end: 1,
+    }),
+    frameRate: 10,
+    repeat: -1,
+  });
 
   this.anims.create({
     key: "right",
@@ -143,6 +157,8 @@ function create() {
     frames: [{ key: "character", frame: 0 }],
     frameRate: 20,
   });
+
+  grassesActive.playAnimation("grassActivity");
 }
 
 function update() {
@@ -175,6 +191,7 @@ function battleScenePreload() {
 
 function battleSceneCreate() {
   console.log(this);
+
   const battlemap = this.make.tilemap({ key: "battlemap" });
   const tileset2 = battlemap.addTilesetImage(
     "RPG Nature Tileset",
@@ -190,14 +207,9 @@ function battleSceneCreate() {
     fontSize: "32px",
     fill: "#000",
   });
-  playerBattlePosition = this.physics.add.sprite(
-    0.25 * 512,
-    0.75 * 512,
-    "playerBattlePosition"
-  );
+  this.physics.add.sprite(0.25 * 512, 0.75 * 512, "playerBattlePosition");
 
-  opponent = this.physics.add.sprite(0.75 * 512, 0.25 * 512, "pikachu");
-  allCharacters[1] = new Character(100, 20);
+  this.physics.add.sprite(0.75 * 512, 0.25 * 512, "pikachu");
 
   const attackButton = this.add
     .image(0.75 * 512, 310, "glassPanel")
@@ -235,13 +247,15 @@ function battleSceneUpdate() {
 
   if (allCharacters[0] && allCharacters[0].hp <= 0) {
     console.log("Game over. You fainted.");
-    allCharacters[player].hp = 100;
     this.scene.switch("mainGame");
+    allCharacters[0].hp = 100;
+    grassesActive.playAnimation("grassActivity");
   }
 
   if (allCharacters[1] && allCharacters[1].hp <= 0) {
     console.log("The opponent fainted.");
     this.scene.switch("mainGame");
+    grassesActive.playAnimation("grassActivity");
   }
 
   if (upJustPressed) {
@@ -253,16 +267,13 @@ function battleSceneUpdate() {
   }
 }
 
-function loadBattleScene(player, grass) {
-  let prob = Math.random();
-  grassTarget = grass;
-  console.log(prob);
-  if (prob < 0.05) {
-    player.setVelocityX(0);
-    player.setVelocityY(0);
-    console.log("loading battle scene", this.scene);
-    this.scene.switch("battleScene");
-  }
+async function loadBattleScene(player, grass) {
+  allCharacters[1] = new Character(100, 20);
+  spawnActiveBrushes();
+  player.setVelocityX(0);
+  player.setVelocityY(0);
+  console.log("loading battle scene", this.scene);
+  this.scene.switch("battleScene");
 }
 
 async function attack() {
@@ -284,21 +295,9 @@ async function attack() {
 }
 
 async function flee() {
-  console.log("destroying the overlap interaction");
-  overlap.destroy();
-  console.log(overlap);
-  console.log("attempting to flee");
+  console.log("fleeing...");
   this.scene.scene.switch("mainGame");
-  await wait(10);
-  const mainScene = this.scene.scene.manager.getScene("mainGame");
-  console.log("adding back overlapping feature");
-  overlap = mainScene.physics.add.overlap(
-    player,
-    grasses,
-    loadBattleScene,
-    null,
-    mainScene
-  );
+  grassesActive.playAnimation("grassActivity");
 }
 
 async function wait(time) {
@@ -330,4 +329,15 @@ function selectNextButton(number) {
 function confirmSelection() {
   const button = buttons[selectedButtonIndex];
   button.emit("selected");
+}
+
+function spawnActiveBrushes() {
+  grassesActive.clear(true, true);
+  let numOfActives = Phaser.Math.Between(1, 12);
+
+  for (let i = 0; i < numOfActives; i++) {
+    let x = grassX[Phaser.Math.Between(0, grassX.length - 1)];
+    let y = grassY[Phaser.Math.Between(0, grassY.length - 1)];
+    grassesActive.create(x, y, "grass-active");
+  }
 }
