@@ -3,6 +3,7 @@ export default class Character {
     this.hp = hp;
     this.att = att;
     this.maxHp = hp;
+    this.exp = 0;
   }
 
   attack(target) {

@@ -161,6 +161,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   async flee() {
+    this.scene.playerTurnFlag = false;
     this.scene.infoMessage.setText(`You attempt to flee...`);
     await this.scene.wait(3);
 
@@ -198,6 +199,7 @@ export class BattleScene extends Phaser.Scene {
         this.scene.p1.maxHp
       );
     }
+    this.scene.playerTurnFlag = true;
   }
 
   async wait(time) {
@@ -304,7 +306,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   async capture() {
-    let prob = 1 - (this.scene.p2.hp / this.scene.p2.maxHp) * 0.7;
+    this.scene.playerTurnFlag = false;
+    let prob = 1 - (this.scene.p2.hp / this.scene.p2.maxHp) * 0.8;
     this.scene.infoMessage.setText(
       `You attempted to catch the monster with a ${prob.toFixed(2)} chance.`
     );
@@ -345,5 +348,7 @@ export class BattleScene extends Phaser.Scene {
         this.scene.p1.maxHp
       );
     }
+
+    this.scene.playerTurnFlag = true;
   }
 }
