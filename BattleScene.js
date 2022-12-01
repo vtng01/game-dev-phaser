@@ -79,7 +79,7 @@ export class BattleScene extends Phaser.Scene {
       .setDisplaySize(200, 50);
     this.add.text(attackButton.x, attackButton.y, "Attack").setOrigin(0.5);
     attackButton.setInteractive();
-    attackButton.on("pointerdown", this.attack);
+    // attackButton.on("pointerdown", this.attack);
     attackButton.on("selected", this.attack);
 
     const runButton = this.add
@@ -87,7 +87,7 @@ export class BattleScene extends Phaser.Scene {
       .setDisplaySize(200, 50);
     this.add.text(runButton.x, runButton.y, "Run").setOrigin(0.5);
     runButton.setInteractive();
-    runButton.on("pointerdown", this.flee);
+    // runButton.on("pointerdown", this.flee);
     runButton.on("selected", this.flee);
 
     this.buttons.push(attackButton);
@@ -113,6 +113,8 @@ export class BattleScene extends Phaser.Scene {
     if (this.allCharacters[0] && this.allCharacters[0].hp <= 0) {
       console.log("Game over. You fainted.");
       this.scene.switch("mainScene");
+      this.mainScene.score = 0;
+      this.mainScene.scoreText.setText(`score: ${this.mainScene.score}`);
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.allCharacters[0].hp = 100;
       this.mainScene.grassesActive.playAnimation("grassActivity");
@@ -121,6 +123,8 @@ export class BattleScene extends Phaser.Scene {
 
     if (this.allCharacters[1] && this.allCharacters[1].hp <= 0) {
       console.log("The opponent fainted.");
+      this.mainScene.score += 10;
+      this.mainScene.scoreText.setText(`score: ${this.mainScene.score}`);
       let newHp = Phaser.Math.Between(70, 100);
       this.allCharacters[1].hp = newHp;
       this.allCharacters[1].maxHp = newHp;
@@ -147,7 +151,7 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  async flee() {
+  flee() {
     console.log("fleeing...");
     this.scene.scene.switch("mainScene");
     this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
@@ -211,9 +215,7 @@ export class BattleScene extends Phaser.Scene {
     console.log("from attack", this.scene.buttons);
     this.scene.p1.attack(this.scene.p2);
     this.scene.playerTurnFlag = false;
-    // for (let btn of this.scene.buttons) {
-    //   btn.visible = false;
-    // }
+
     console.log("cursors: ", this.scene.battleSceneCursors);
     this.scene.drawHp(
       0.75 * 512 - 25,
@@ -228,12 +230,29 @@ export class BattleScene extends Phaser.Scene {
 
     await this.scene.wait(3);
 
-    this.scene.p2.attack(this.scene.p1);
+    let prob = Math.random();
+    if (prob < 0.3) {
+      console.log("The pokemon attempted to flee...");
+      this.scene.scene.switch("mainScene");
+      this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
+      this.scene.mainScene.grassesActive.playAnimation("grassActivity");
+      let newHp = Phaser.Math.Between(70, 100);
+      this.scene.allCharacters[1].hp = newHp;
+      this.scene.allCharacters[1].maxHp = newHp;
+      this.scene.allCharacters[1].att = Phaser.Math.Between(10, 30);
+      this.scene.drawHp(
+        0.75 * 512 - 25,
+        0.25 * 512 - 92 * 0.5 - 16,
+        this.scene.p2.hp,
+        this.scene.p2.maxHp
+      );
+    } else {
+      this.scene.p2.attack(this.scene.p1);
+    }
+
     console.log("cursors: ", this.scene.battleSceneCursors);
     this.scene.playerTurnFlag = true;
-    // for (let btn of this.scene.buttons) {
-    //   btn.visible = true;
-    // }
+
     this.scene.drawHp(
       128 - 80 * 0.5,
       284,

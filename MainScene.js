@@ -9,6 +9,8 @@ export class MainScene extends Phaser.Scene {
     this.grassesActive;
     this.grassX = [];
     this.grassY = [];
+    this.score = 0;
+    this.scoreText;
   }
 
   preload() {
@@ -39,6 +41,10 @@ export class MainScene extends Phaser.Scene {
       0
     );
     const layer1 = map.createLayer("Tile Layer 1", tileset, 0, 0);
+    this.scoreText = this.add.text(16, 16, `score: ${this.score}`, {
+      fontSize: "20px",
+      fill: "#000",
+    });
 
     this.grasses = this.physics.add.group();
 
