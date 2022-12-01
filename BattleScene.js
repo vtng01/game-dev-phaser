@@ -6,7 +6,7 @@ export class BattleScene extends Phaser.Scene {
     this.allCharacters = [1, 2];
     this.p1;
     this.p2;
-    this.turnIndicator;
+    this.infoMessage;
     this.buttonselector;
     this.buttons = [];
     this.selectedButtonIndex = 0;
@@ -23,6 +23,7 @@ export class BattleScene extends Phaser.Scene {
     this.load.tilemapTiledJSON("battlemap", "assets/battlemap.json");
     this.load.image("playerBattlePosition", "assets/playerBattlePosition.png");
     this.load.image("glassPanel", "assets/glassPanel.png");
+    this.load.image("metalPanel", "assets/metalPanel.png");
     this.load.image("pikachu", "assets/pikachu.png");
     this.load.image("cursorHand", "assets/cursor_pointer3D.png");
     this.load.spritesheet("pokemons", "assets/pokemons.png", {
@@ -51,12 +52,19 @@ export class BattleScene extends Phaser.Scene {
     this.allCharacters[0] = this.p1;
     this.allCharacters[1] = this.p2;
 
-    this.turnIndicator = this.add.text(16, 16, "It's your turn!", {
-      fontSize: "32px",
-      fill: "#000",
-    });
+    const infoBox = this.add
+      .image(0.5 * 512, 25, "metalPanel")
+      .setDisplaySize(512, 50);
+
+    this.infoMessage = this.add
+      .text(infoBox.x, infoBox.y, "It's your turn!", {
+        fontSize: "16px",
+        fill: "#000",
+        wordWrap: { width: 500, useAdvancedWrap: true },
+      })
+      .setOrigin(0.5);
     this.physics.add.sprite(0.25 * 512, 0.75 * 512, "playerBattlePosition");
-    this.drawHp(128 - 80 * 0.5, 284, this.p1.hp, this.p1.maxHp);
+    this.drawHp(0.25 * 512 - 60, 0.75 * 512 - 100, this.p1.hp, this.p1.maxHp);
 
     this.num = Phaser.Math.Between(0, 15);
 
@@ -67,42 +75,39 @@ export class BattleScene extends Phaser.Scene {
       this.num
     );
 
-    this.drawHp(
-      0.75 * 512 - 25,
-      0.25 * 512 - 92 * 0.5 - 16,
-      this.p2.hp,
-      this.p2.maxHp
-    );
+    this.drawHp(0.75 * 512 - 60, 0.25 * 512 - 60, this.p2.hp, this.p2.maxHp);
 
     const attackButton = this.add
-      .image(0.75 * 512, 310, "glassPanel")
+      .image(0.75 * 512, 310, "metalPanel")
       .setDisplaySize(200, 50);
-    this.add.text(attackButton.x, attackButton.y, "Attack").setOrigin(0.5);
+    this.add
+      .text(attackButton.x, attackButton.y, "Attack", { color: "0x0642cf" })
+      .setOrigin(0.5);
     attackButton.setInteractive();
-    // attackButton.on("pointerdown", this.attack);
     attackButton.on("selected", this.attack);
 
     const captureButton = this.add
-      .image(0.75 * 512, 380, "glassPanel")
+      .image(0.75 * 512, 380, "metalPanel")
       .setDisplaySize(200, 50);
-    this.add.text(captureButton.x, captureButton.y, "Capture").setOrigin(0.5);
+    this.add
+      .text(captureButton.x, captureButton.y, "Capture", { color: "0x0642cf" })
+      .setOrigin(0.5);
     captureButton.setInteractive();
-    // attackButton.on("pointerdown", this.attack);
     captureButton.on("selected", this.capture);
 
     const runButton = this.add
-      .image(0.75 * 512, 450, "glassPanel")
+      .image(0.75 * 512, 450, "metalPanel")
       .setDisplaySize(200, 50);
-    this.add.text(runButton.x, runButton.y, "Run").setOrigin(0.5);
+    this.add
+      .text(runButton.x, runButton.y, "Run", { color: "0x0642cf" })
+      .setOrigin(0.5);
     runButton.setInteractive();
-    // runButton.on("pointerdown", this.flee);
     runButton.on("selected", this.flee);
 
     this.buttons.push(attackButton);
     this.buttons.push(captureButton);
     this.buttons.push(runButton);
 
-    console.log(this.buttons.length);
     this.buttonselector = this.add.image(0.5 * 512, 0.5 * 512, "cursorHand");
 
     this.battleSceneCursors = this.input.keyboard.createCursorKeys();
@@ -128,7 +133,7 @@ export class BattleScene extends Phaser.Scene {
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.allCharacters[0].hp = 100;
       this.mainScene.grassesActive.playAnimation("grassActivity");
-      this.drawHp(128 - 80 * 0.5, 284, this.p1.hp, this.p1.maxHp);
+      this.drawHp(0.25 * 512 - 60, 0.75 * 512 - 100, this.p1.hp, this.p1.maxHp);
     }
 
     if (this.allCharacters[1] && this.allCharacters[1].hp <= 0) {
@@ -143,12 +148,7 @@ export class BattleScene extends Phaser.Scene {
       this.scene.switch("mainScene");
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.mainScene.grassesActive.playAnimation("grassActivity");
-      this.drawHp(
-        0.75 * 512 - 25,
-        0.25 * 512 - 92 * 0.5 - 16,
-        this.p2.hp,
-        this.p2.maxHp
-      );
+      this.drawHp(0.75 * 512 - 60, 0.25 * 512 - 60, this.p2.hp, this.p2.maxHp);
     }
 
     if (upJustPressed) {
@@ -160,21 +160,44 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  flee() {
-    console.log("fleeing...");
-    this.scene.scene.switch("mainScene");
-    this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
-    this.scene.mainScene.grassesActive.playAnimation("grassActivity");
-    let newHp = Phaser.Math.Between(70, 100);
-    this.scene.allCharacters[1].hp = newHp;
-    this.scene.allCharacters[1].maxHp = newHp;
-    this.scene.allCharacters[1].att = Phaser.Math.Between(10, 30);
-    this.scene.drawHp(
-      0.75 * 512 - 25,
-      0.25 * 512 - 92 * 0.5 - 16,
-      this.scene.p2.hp,
-      this.scene.p2.maxHp
-    );
+  async flee() {
+    this.scene.infoMessage.setText(`You attempt to flee...`);
+    await this.scene.wait(3);
+
+    let prob = 0.7;
+
+    if (Math.random() < prob) {
+      this.scene.infoMessage.setText(`...and you got away!`);
+      await this.scene.wait(3);
+      this.scene.scene.switch("mainScene");
+      this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
+      this.scene.mainScene.grassesActive.playAnimation("grassActivity");
+      let newHp = Phaser.Math.Between(70, 100);
+      this.scene.allCharacters[1].hp = newHp;
+      this.scene.allCharacters[1].maxHp = newHp;
+      this.scene.allCharacters[1].att = Phaser.Math.Between(10, 30);
+      this.scene.drawHp(
+        0.75 * 512 - 60,
+        0.25 * 512 - 60,
+        this.scene.p2.hp,
+        this.scene.p2.maxHp
+      );
+    } else {
+      this.scene.infoMessage.setText(`...and you fail to get away!`);
+      await this.scene.wait(3);
+      this.scene.p2.attack(this.scene.p1);
+      this.scene.infoMessage.setText(
+        `...and the Pokemon dealt ${this.scene.p2.att} damage to you!`
+      );
+      await this.scene.wait(3);
+      this.scene.infoMessage.setText("It's your turn!");
+      this.scene.drawHp(
+        0.25 * 512 - 60,
+        0.75 * 512 - 100,
+        this.scene.p1.hp,
+        this.scene.p1.maxHp
+      );
+    }
   }
 
   async wait(time) {
@@ -215,33 +238,38 @@ export class BattleScene extends Phaser.Scene {
     let bar = this.add.graphics();
 
     bar2.fillStyle(0xbf0407);
-    bar2.fillRect(x, y, 80, 16);
+    bar2.fillRect(x, y, 120, 16);
     bar.fillStyle(0x0642cf);
-    bar.fillRect(x, y, (hp / maxHp) * 80, 16);
+    bar.fillRect(x, y, (hp / maxHp) * 120, 16);
   }
 
   async attack() {
-    console.log("from attack", this.scene.buttons);
     this.scene.p1.attack(this.scene.p2);
     this.scene.playerTurnFlag = false;
 
-    console.log("cursors: ", this.scene.battleSceneCursors);
     this.scene.drawHp(
-      0.75 * 512 - 25,
-      0.25 * 512 - 92 * 0.5 - 16,
+      0.75 * 512 - 60,
+      0.25 * 512 - 60,
       this.scene.p2.hp,
       this.scene.p2.maxHp
     );
+    this.scene.infoMessage.setText(
+      `You dealt ${this.scene.p1.att} damage to the Pokemon`
+    );
+    await this.scene.wait(3);
 
-    console.log("You attacked the Opponent");
+    if (this.scene.p2.hp <= 0) {
+      this.scene.infoMessage.setText("Opponent fainted");
+      return;
+    }
 
-    this.scene.turnIndicator.setText("Your opponent is planning!");
-
+    this.scene.infoMessage.setText("Your opponent is planning...");
     await this.scene.wait(3);
 
     let prob = Math.random();
     if (prob < 0.3) {
-      console.log("The pokemon attempted to flee...");
+      this.scene.infoMessage.setText("The Pokemon escaped");
+      await this.scene.wait(3);
       this.scene.scene.switch("mainScene");
       this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.scene.mainScene.grassesActive.playAnimation("grassActivity");
@@ -250,34 +278,72 @@ export class BattleScene extends Phaser.Scene {
       this.scene.allCharacters[1].maxHp = newHp;
       this.scene.allCharacters[1].att = Phaser.Math.Between(10, 30);
       this.scene.drawHp(
-        0.75 * 512 - 25,
-        0.25 * 512 - 92 * 0.5 - 16,
+        0.75 * 512 - 60,
+        0.25 * 512 - 60,
         this.scene.p2.hp,
         this.scene.p2.maxHp
       );
     } else {
       this.scene.p2.attack(this.scene.p1);
+      this.scene.infoMessage.setText(
+        `The Pokemon dealt ${this.scene.p2.att} damage to you!`
+      );
+      await this.scene.wait(3);
     }
 
-    console.log("cursors: ", this.scene.battleSceneCursors);
     this.scene.playerTurnFlag = true;
 
     this.scene.drawHp(
-      128 - 80 * 0.5,
-      284,
+      0.25 * 512 - 60,
+      0.75 * 512 - 100,
       this.scene.p1.hp,
       this.scene.p1.maxHp
     );
-    console.log("Your Opponent attacked you!");
 
-    this.scene.turnIndicator.setText("It's your turn!");
+    this.scene.infoMessage.setText("It's your turn!");
   }
 
-  capture() {
+  async capture() {
     let prob = 1 - (this.scene.p2.hp / this.scene.p2.maxHp) * 0.7;
-    console.log(`you have a ${prob} chance of capturing`);
+    this.scene.infoMessage.setText(
+      `You attempted to catch the monster with a ${prob.toFixed(2)} chance.`
+    );
+    await this.scene.wait(3);
     if (Math.random() < prob) {
-      console.log("You captured the pokemon!!!");
+      this.scene.infoMessage.setText("You captured the pokemon!!!");
+      this.scene.mainScene.score += 50;
+      this.scene.mainScene.scoreText.setText(
+        `score: ${this.scene.mainScene.score}`
+      );
+      await this.scene.wait(3);
+      this.scene.scene.switch("mainScene");
+      this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
+      this.scene.mainScene.grassesActive.playAnimation("grassActivity");
+      let newHp = Phaser.Math.Between(70, 100);
+      this.scene.allCharacters[1].hp = newHp;
+      this.scene.allCharacters[1].maxHp = newHp;
+      this.scene.allCharacters[1].att = Phaser.Math.Between(10, 30);
+      this.scene.drawHp(
+        0.75 * 512 - 60,
+        0.25 * 512 - 60,
+        this.scene.p2.hp,
+        this.scene.p2.maxHp
+      );
+    } else {
+      this.scene.infoMessage.setText("You failed to capture...");
+      await this.scene.wait(3);
+      this.scene.p2.attack(this.scene.p1);
+      this.scene.infoMessage.setText(
+        `...and the Pokemon dealt ${this.scene.p2.att} damage to you!`
+      );
+      await this.scene.wait(3);
+      this.scene.infoMessage.setText("It's your turn!");
+      this.scene.drawHp(
+        0.25 * 512 - 60,
+        0.75 * 512 - 100,
+        this.scene.p1.hp,
+        this.scene.p1.maxHp
+      );
     }
   }
 }
