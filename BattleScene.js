@@ -82,8 +82,16 @@ export class BattleScene extends Phaser.Scene {
     // attackButton.on("pointerdown", this.attack);
     attackButton.on("selected", this.attack);
 
+    const captureButton = this.add
+      .image(0.75 * 512, 380, "glassPanel")
+      .setDisplaySize(200, 50);
+    this.add.text(captureButton.x, captureButton.y, "Capture").setOrigin(0.5);
+    captureButton.setInteractive();
+    // attackButton.on("pointerdown", this.attack);
+    captureButton.on("selected", this.capture);
+
     const runButton = this.add
-      .image(0.75 * 512, 400, "glassPanel")
+      .image(0.75 * 512, 450, "glassPanel")
       .setDisplaySize(200, 50);
     this.add.text(runButton.x, runButton.y, "Run").setOrigin(0.5);
     runButton.setInteractive();
@@ -91,8 +99,10 @@ export class BattleScene extends Phaser.Scene {
     runButton.on("selected", this.flee);
 
     this.buttons.push(attackButton);
+    this.buttons.push(captureButton);
     this.buttons.push(runButton);
 
+    console.log(this.buttons.length);
     this.buttonselector = this.add.image(0.5 * 512, 0.5 * 512, "cursorHand");
 
     this.battleSceneCursors = this.input.keyboard.createCursorKeys();
@@ -130,7 +140,6 @@ export class BattleScene extends Phaser.Scene {
       this.allCharacters[1].maxHp = newHp;
       this.allCharacters[1].att = Phaser.Math.Between(10, 30);
 
-      console.log("op", this.allCharacters[1]);
       this.scene.switch("mainScene");
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.mainScene.grassesActive.playAnimation("grassActivity");
@@ -143,9 +152,9 @@ export class BattleScene extends Phaser.Scene {
     }
 
     if (upJustPressed) {
-      this.selectNextButton(1);
-    } else if (downJustPressed) {
       this.selectNextButton(-1);
+    } else if (downJustPressed) {
+      this.selectNextButton(1);
     } else if (spaceJustPressed) {
       this.confirmSelection();
     }
@@ -187,7 +196,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (index >= this.buttons.length) {
       index = 0;
-    } else {
+    } else if (index < 0) {
       index = this.buttons.length - 1;
     }
 
@@ -262,5 +271,13 @@ export class BattleScene extends Phaser.Scene {
     console.log("Your Opponent attacked you!");
 
     this.scene.turnIndicator.setText("It's your turn!");
+  }
+
+  capture() {
+    let prob = 1 - (this.scene.p2.hp / this.scene.p2.maxHp) * 0.7;
+    console.log(`you have a ${prob} chance of capturing`);
+    if (Math.random() < prob) {
+      console.log("You captured the pokemon!!!");
+    }
   }
 }
