@@ -14,6 +14,9 @@ export class BattleScene extends Phaser.Scene {
     this.mainScene;
     this.bar;
     this.bar2;
+    this.playerTurnFlag = true;
+    this.enemyNum;
+    this.pokemon;
   }
 
   preload() {
@@ -22,6 +25,10 @@ export class BattleScene extends Phaser.Scene {
     this.load.image("glassPanel", "assets/glassPanel.png");
     this.load.image("pikachu", "assets/pikachu.png");
     this.load.image("cursorHand", "assets/cursor_pointer3D.png");
+    this.load.spritesheet("pokemons", "assets/pokemons.png", {
+      frameWidth: 120,
+      frameHeight: 120,
+    });
   }
 
   create() {
@@ -37,7 +44,10 @@ export class BattleScene extends Phaser.Scene {
     );
     const layer1 = battlemap.createLayer("Tile Layer 2", tileset2, 0, 0);
     this.p1 = new Character(100, 25);
-    this.p2 = new Character(100, 20);
+    this.p2 = new Character(
+      Phaser.Math.Between(70, 100),
+      Phaser.Math.Between(10, 35)
+    );
     this.allCharacters[0] = this.p1;
     this.allCharacters[1] = this.p2;
 
@@ -48,7 +58,15 @@ export class BattleScene extends Phaser.Scene {
     this.physics.add.sprite(0.25 * 512, 0.75 * 512, "playerBattlePosition");
     this.drawHp(128 - 80 * 0.5, 284, this.p1.hp, this.p1.maxHp);
 
-    this.physics.add.sprite(0.75 * 512, 0.25 * 512, "pikachu");
+    this.num = Phaser.Math.Between(0, 15);
+
+    this.pokemon = this.physics.add.sprite(
+      0.75 * 512,
+      0.25 * 512,
+      "pokemons",
+      this.num
+    );
+
     this.drawHp(
       0.75 * 512 - 25,
       0.25 * 512 - 92 * 0.5 - 16,
@@ -95,6 +113,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.allCharacters[0] && this.allCharacters[0].hp <= 0) {
       console.log("Game over. You fainted.");
       this.scene.switch("mainScene");
+      this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.allCharacters[0].hp = 100;
       this.mainScene.grassesActive.playAnimation("grassActivity");
       this.drawHp(128 - 80 * 0.5, 284, this.p1.hp, this.p1.maxHp);
@@ -109,6 +128,7 @@ export class BattleScene extends Phaser.Scene {
 
       console.log("op", this.allCharacters[1]);
       this.scene.switch("mainScene");
+      this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.mainScene.grassesActive.playAnimation("grassActivity");
       this.drawHp(
         0.75 * 512 - 25,
@@ -130,6 +150,7 @@ export class BattleScene extends Phaser.Scene {
   async flee() {
     console.log("fleeing...");
     this.scene.scene.switch("mainScene");
+    this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
     this.scene.mainScene.grassesActive.playAnimation("grassActivity");
     let newHp = Phaser.Math.Between(70, 100);
     this.scene.allCharacters[1].hp = newHp;
@@ -170,8 +191,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   confirmSelection() {
-    const button = this.buttons[this.selectedButtonIndex];
-    button.emit("selected");
+    if (this.playerTurnFlag) {
+      const button = this.buttons[this.selectedButtonIndex];
+      button.emit("selected");
+    }
   }
 
   drawHp(x, y, hp, maxHp) {
@@ -185,8 +208,13 @@ export class BattleScene extends Phaser.Scene {
   }
 
   async attack() {
-    console.log(this.scene.p2);
+    console.log("from attack", this.scene.buttons);
     this.scene.p1.attack(this.scene.p2);
+    this.scene.playerTurnFlag = false;
+    // for (let btn of this.scene.buttons) {
+    //   btn.visible = false;
+    // }
+    console.log("cursors: ", this.scene.battleSceneCursors);
     this.scene.drawHp(
       0.75 * 512 - 25,
       0.25 * 512 - 92 * 0.5 - 16,
@@ -201,6 +229,11 @@ export class BattleScene extends Phaser.Scene {
     await this.scene.wait(3);
 
     this.scene.p2.attack(this.scene.p1);
+    console.log("cursors: ", this.scene.battleSceneCursors);
+    this.scene.playerTurnFlag = true;
+    // for (let btn of this.scene.buttons) {
+    //   btn.visible = true;
+    // }
     this.scene.drawHp(
       128 - 80 * 0.5,
       284,
