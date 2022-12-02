@@ -23,6 +23,9 @@ export class BattleScene extends Phaser.Scene {
     this.playerAttackAnimation;
     this.playerReceiveDamageAnimation;
     this.smoke;
+    this.pokeball;
+    this.pokeballThrowAnimation;
+    this.pokeballActivityAnimation;
   }
 
   preload() {
@@ -32,6 +35,7 @@ export class BattleScene extends Phaser.Scene {
     this.load.image("metalPanel", "assets/metalPanel.png");
     this.load.image("pikachu", "assets/pikachu.png");
     this.load.image("cursorHand", "assets/cursor_pointer3D.png");
+    this.load.image("pokeball", "assets/pokeball.png");
     this.load.spritesheet("pokemons", "assets/pokemons.png", {
       frameWidth: 120,
       frameHeight: 120,
@@ -55,7 +59,7 @@ export class BattleScene extends Phaser.Scene {
       0
     );
     const layer1 = battlemap.createLayer("Tile Layer 2", tileset2, 0, 0);
-    this.p1 = new Character(100, 25);
+    this.p1 = new Character(100, 100);
     this.p2 = new Character(
       Phaser.Math.Between(70, 100),
       Phaser.Math.Between(10, 35)
@@ -90,6 +94,14 @@ export class BattleScene extends Phaser.Scene {
       this.num
     );
 
+    this.pokeball = this.physics.add.sprite(
+      0.25 * 512 + 80,
+      0.75 * 512 + 75 - 14,
+      "pokeball"
+    );
+
+    this.pokeball.visible = false;
+
     this.smoke = this.physics.add.group();
 
     this.anims.create({
@@ -99,6 +111,27 @@ export class BattleScene extends Phaser.Scene {
         end: 6,
       }),
       frameRate: 10,
+    });
+
+    this.pokeballActivityAnimation = this.tweens.add({
+      targets: this.pokeball,
+      scaleX: 1.5,
+      scaleY: 1.5,
+      ease: "Power1",
+      duration: 500,
+      yoyo: true,
+      repeat: 2,
+      onComplete: () => this.pokeballActivityAnimation.restart(),
+      paused: true,
+    });
+
+    this.pokeballThrowAnimation = this.tweens.add({
+      targets: this.pokeball,
+      x: 0.75 * 512,
+      y: 0.25 * 512,
+      ease: "Power1",
+      duration: 1000,
+      paused: true,
     });
 
     this.pokemonAttackAnimation = this.tweens.add({
@@ -221,12 +254,20 @@ export class BattleScene extends Phaser.Scene {
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
 
       this.scene.switch("mainScene");
+      this.playerTurnFlag = true;
+      this.infoMessage.setText("It's your turn!");
       this.mainScene.score = 0;
       this.mainScene.scoreText.setText(`score: ${this.mainScene.score}`);
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.allCharacters[0].hp = this.allCharacters[0].maxHp;
       this.mainScene.grassesActive.playAnimation("grassActivity");
       this.drawHp(0.25 * 512 - 60, 0.75 * 512 - 100, this.p1.hp, this.p1.maxHp);
+      this.drawHp(
+        0.75 * 512 - 60,
+        0.25 * 512 - 60 - 16,
+        this.p2.hp,
+        this.p2.maxHp
+      );
     }
 
     if (this.allCharacters[1] && this.allCharacters[1].hp <= 0) {
@@ -240,10 +281,13 @@ export class BattleScene extends Phaser.Scene {
       this.mainScene.levelText.setText(`Lvl: ${this.mainScene.level}`);
 
       this.allCharacters[0].exp %= 100;
-
       this.allCharacters[0].att += 5 * factor;
       this.allCharacters[0].maxHp += 15 * factor;
-      this.allCharacters[0].hp = this.allCharacters[0].maxHp;
+
+      if (factor > 0) {
+        this.allCharacters[0].hp = this.allCharacters[0].maxHp;
+      }
+
       this.drawHp(
         0.25 * 512 - 60,
         0.75 * 512 - 100,
@@ -257,6 +301,8 @@ export class BattleScene extends Phaser.Scene {
       this.allCharacters[1].att = Phaser.Math.Between(10, 30);
 
       this.scene.switch("mainScene");
+      this.playerTurnFlag = true;
+      this.infoMessage.setText("It's your turn!");
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.mainScene.grassesActive.playAnimation("grassActivity");
       this.drawHp(
@@ -281,9 +327,9 @@ export class BattleScene extends Phaser.Scene {
     this.scene.infoMessage.setText(`You attempt to flee...`);
     await this.scene.wait(3);
 
-    let prob = 0.7;
+    let probOfRunning = 0.35;
 
-    if (Math.random() < prob) {
+    if (Math.random() < probOfRunning) {
       this.scene.infoMessage.setText(`...and you got away!`);
       await this.scene.wait(3);
       this.scene.scene.switch("mainScene");
@@ -302,19 +348,12 @@ export class BattleScene extends Phaser.Scene {
     } else {
       this.scene.infoMessage.setText(`...and you fail to get away!`);
       await this.scene.wait(3);
-      this.scene.p2.attack(this.scene.p1);
-      this.scene.infoMessage.setText(
-        `...and the Pokemon dealt ${this.scene.p2.att} damage to you!`
-      );
+
+      this.scene.infoMessage.setText("Your opponent is thinking...");
       await this.scene.wait(3);
-      this.scene.infoMessage.setText("It's your turn!");
-      this.scene.drawHp(
-        0.25 * 512 - 60,
-        0.75 * 512 - 100,
-        this.scene.p1.hp,
-        this.scene.p1.maxHp
-      );
+      await this.scene.pokemonAttackTurn();
     }
+    this.scene.infoMessage.setText("It's your turn!");
     this.scene.playerTurnFlag = true;
   }
 
@@ -362,89 +401,121 @@ export class BattleScene extends Phaser.Scene {
   }
 
   async attack() {
-    this.scene.p1.attack(this.scene.p2);
     this.scene.playerTurnFlag = false;
 
     this.scene.playerAttackAnimation.play();
     await this.scene.wait(1);
     this.scene.pokemonReceiveDamageAnimation.play();
 
+    this.scene.infoMessage.setText(
+      `You dealt ${this.scene.p1.att} damage to the Pokemon`
+    );
+    await this.scene.wait(3);
+
+    if (this.scene.p2.hp - this.scene.p1.att <= 0) {
+      this.scene.infoMessage.setText(
+        "Your opponent was attempting something but..."
+      );
+      await this.scene.wait(3);
+      this.scene.infoMessage.setText("Omae wa... mou shindeiru!!!");
+      await this.scene.wait(3);
+      this.scene.infoMessage.setText("Opponent fainted");
+      this.scene.drawHp(
+        0.75 * 512 - 60,
+        0.25 * 512 - 60 - 16,
+        0,
+        this.scene.p2.maxHp
+      );
+      await this.scene.wait(3);
+      this.scene.infoMessage.setText(
+        `You gained 10 points and ${this.scene.p2.maxHp} experience!`
+      );
+      await this.scene.wait(3);
+      this.scene.p1.attack(this.scene.p2);
+      return;
+    }
+    this.scene.p1.attack(this.scene.p2);
     this.scene.drawHp(
       0.75 * 512 - 60,
       0.25 * 512 - 60 - 16,
       this.scene.p2.hp,
       this.scene.p2.maxHp
     );
-    this.scene.infoMessage.setText(
-      `You dealt ${this.scene.p1.att} damage to the Pokemon`
-    );
-    await this.scene.wait(3);
-
-    if (this.scene.p2.hp <= 0) {
-      this.scene.infoMessage.setText("Opponent fainted");
-      return;
-    }
 
     this.scene.infoMessage.setText("Your opponent is planning...");
     await this.scene.wait(3);
 
-    let prob = Math.random();
-    if (prob < 0.99) {
-      this.scene.smoke.create(0.75 * 512, 0.25 * 512, "smoke");
-      this.scene.smoke.playAnimation("smokeIdle");
-      this.scene.pokemon.visible = false;
-      await this.scene.wait(1);
-      this.scene.smoke.clear(true, true);
-
-      this.scene.infoMessage.setText("It chose to escape!");
-      await this.scene.wait(3);
-      this.scene.scene.switch("mainScene");
-      this.scene.pokemon.visible = true;
-
-      this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
-      this.scene.mainScene.grassesActive.playAnimation("grassActivity");
-      let newHp = Phaser.Math.Between(70, 100);
-      this.scene.allCharacters[1].hp = newHp;
-      this.scene.allCharacters[1].maxHp = newHp;
-      this.scene.allCharacters[1].att = Phaser.Math.Between(10, 30);
-      this.scene.drawHp(
-        0.75 * 512 - 60,
-        0.25 * 512 - 60 - 16,
-        this.scene.p2.hp,
-        this.scene.p2.maxHp
-      );
-    } else {
-      this.scene.p2.attack(this.scene.p1);
-      this.scene.pokemonAttackAnimation.play();
-      await this.scene.wait(1);
-      // this.scene.pokemonAttackAnimation.play();
-      this.scene.playerReceiveDamageAnimation.play();
-      // await this.scene.wait(0.3);
-      // this.scene.playerReceiveDamageAnimation.pause();
-      this.scene.drawHp(
-        0.25 * 512 - 60,
-        0.75 * 512 - 100,
-        this.scene.p1.hp,
-        this.scene.p1.maxHp
-      );
-      this.scene.infoMessage.setText(
-        `The Pokemon dealt ${this.scene.p2.att} damage to you!`
-      );
-
-      await this.scene.wait(3);
-    }
+    await this.scene.pokemonAttackTurn();
 
     this.scene.playerTurnFlag = true;
 
     this.scene.infoMessage.setText("It's your turn!");
   }
 
+  async pokemonAttackTurn() {
+    let probOfRunning = Math.random();
+    if (probOfRunning < 0.15) {
+      this.smoke.create(0.75 * 512, 0.25 * 512, "smoke");
+      this.smoke.playAnimation("smokeIdle");
+      this.pokemon.visible = false;
+      await this.wait(1);
+      this.smoke.clear(true, true);
+
+      this.infoMessage.setText("Nani!!! It escaped!!");
+      await this.wait(3);
+      this.scene.switch("mainScene");
+      this.pokemon.visible = true;
+
+      this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
+      this.mainScene.grassesActive.playAnimation("grassActivity");
+      let newHp = Phaser.Math.Between(70, 100);
+      this.allCharacters[1].hp = newHp;
+      this.allCharacters[1].maxHp = newHp;
+      this.allCharacters[1].att = Phaser.Math.Between(10, 30);
+      this.drawHp(
+        0.75 * 512 - 60,
+        0.25 * 512 - 60 - 16,
+        this.p2.hp,
+        this.p2.maxHp
+      );
+    } else {
+      this.pokemonAttackAnimation.play();
+      await this.wait(1);
+      this.playerReceiveDamageAnimation.play();
+
+      this.drawHp(0.25 * 512 - 60, 0.75 * 512 - 100, this.p1.hp, this.p1.maxHp);
+      this.infoMessage.setText(
+        `The Pokemon dealt ${this.p2.att} damage to you!`
+      );
+      await this.wait(3);
+
+      if (this.p1.hp - this.p2.att <= 0) {
+        this.infoMessage.setText("Oh dear... you fainted");
+        this.drawHp(0.25 * 512 - 60, 0.75 * 512 - 100, 0, this.p1.maxHp);
+        await this.wait(3);
+        this.infoMessage.setText(`Your score is now reset`);
+        await this.wait(3);
+        this.p2.attack(this.p1);
+        return;
+      }
+
+      this.p2.attack(this.p1);
+      this.drawHp(0.25 * 512 - 60, 0.75 * 512 - 100, this.p1.hp, this.p1.maxHp);
+      await this.wait(3);
+    }
+  }
+
   async capture() {
     this.scene.playerTurnFlag = false;
+    this.scene.pokeball.visible = true;
     let prob = 1 - (this.scene.p2.hp / this.scene.p2.maxHp) * 0.8;
     this.scene.infoMessage.setText(
       `You attempted to catch the monster with a ${prob.toFixed(2)} chance.`
     );
+    this.scene.pokeballThrowAnimation.play();
+    await this.scene.wait(1);
+    this.scene.pokemon.visible = false;
+    this.scene.pokeballActivityAnimation.play();
     await this.scene.wait(3);
     if (Math.random() < prob) {
       this.scene.infoMessage.setText("You captured the pokemon!!!");
@@ -453,7 +524,11 @@ export class BattleScene extends Phaser.Scene {
         `score: ${this.scene.mainScene.score}`
       );
       await this.scene.wait(3);
+      this.scene.infoMessage.setText(`You gained 50 points!`);
+      await this.scene.wait(3);
       this.scene.scene.switch("mainScene");
+      this.scene.pokemon.visible = true;
+      this.scene.pokeball.visible = false;
       this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.scene.mainScene.grassesActive.playAnimation("grassActivity");
       let newHp = Phaser.Math.Between(70, 100);
@@ -467,22 +542,16 @@ export class BattleScene extends Phaser.Scene {
         this.scene.p2.maxHp
       );
     } else {
+      this.scene.pokeball.visible = false;
+      this.scene.pokemon.visible = true;
       this.scene.infoMessage.setText("You failed to capture...");
       await this.scene.wait(3);
-      this.scene.p2.attack(this.scene.p1);
-      this.scene.infoMessage.setText(
-        `...and the Pokemon dealt ${this.scene.p2.att} damage to you!`
-      );
-      await this.scene.wait(3);
-      this.scene.infoMessage.setText("It's your turn!");
-      this.scene.drawHp(
-        0.25 * 512 - 60,
-        0.75 * 512 - 100,
-        this.scene.p1.hp,
-        this.scene.p1.maxHp
-      );
-    }
 
+      this.scene.infoMessage.setText("Your opponent is thinking...");
+      await this.scene.wait(3);
+      await this.scene.pokemonAttackTurn();
+    }
+    this.scene.infoMessage.setText("It's your turn!");
     this.scene.playerTurnFlag = true;
   }
 }
