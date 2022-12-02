@@ -22,6 +22,7 @@ export class BattleScene extends Phaser.Scene {
     this.player;
     this.playerAttackAnimation;
     this.playerReceiveDamageAnimation;
+    this.smoke;
   }
 
   preload() {
@@ -32,6 +33,11 @@ export class BattleScene extends Phaser.Scene {
     this.load.image("pikachu", "assets/pikachu.png");
     this.load.image("cursorHand", "assets/cursor_pointer3D.png");
     this.load.spritesheet("pokemons", "assets/pokemons.png", {
+      frameWidth: 120,
+      frameHeight: 120,
+    });
+
+    this.load.spritesheet("smoke", "assets/smokeFX.png", {
       frameWidth: 120,
       frameHeight: 120,
     });
@@ -83,6 +89,17 @@ export class BattleScene extends Phaser.Scene {
       "pokemons",
       this.num
     );
+
+    this.smoke = this.physics.add.group();
+
+    this.anims.create({
+      key: "smokeIdle",
+      frames: this.anims.generateFrameNumbers("smoke", {
+        start: 0,
+        end: 6,
+      }),
+      frameRate: 10,
+    });
 
     this.pokemonAttackAnimation = this.tweens.add({
       targets: this.pokemon,
@@ -140,7 +157,12 @@ export class BattleScene extends Phaser.Scene {
       paused: true,
     });
 
-    this.drawHp(0.75 * 512 - 60, 0.25 * 512 - 60, this.p2.hp, this.p2.maxHp);
+    this.drawHp(
+      0.75 * 512 - 60,
+      0.25 * 512 - 60 - 16,
+      this.p2.hp,
+      this.p2.maxHp
+    );
 
     const attackButton = this.add
       .image(0.75 * 512, 310, "metalPanel")
@@ -237,7 +259,12 @@ export class BattleScene extends Phaser.Scene {
       this.scene.switch("mainScene");
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.mainScene.grassesActive.playAnimation("grassActivity");
-      this.drawHp(0.75 * 512 - 60, 0.25 * 512 - 60, this.p2.hp, this.p2.maxHp);
+      this.drawHp(
+        0.75 * 512 - 60,
+        0.25 * 512 - 60 - 16,
+        this.p2.hp,
+        this.p2.maxHp
+      );
     }
 
     if (upJustPressed) {
@@ -268,7 +295,7 @@ export class BattleScene extends Phaser.Scene {
       this.scene.allCharacters[1].att = Phaser.Math.Between(10, 30);
       this.scene.drawHp(
         0.75 * 512 - 60,
-        0.25 * 512 - 60,
+        0.25 * 512 - 60 - 16,
         this.scene.p2.hp,
         this.scene.p2.maxHp
       );
@@ -344,7 +371,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.scene.drawHp(
       0.75 * 512 - 60,
-      0.25 * 512 - 60,
+      0.25 * 512 - 60 - 16,
       this.scene.p2.hp,
       this.scene.p2.maxHp
     );
@@ -363,8 +390,13 @@ export class BattleScene extends Phaser.Scene {
 
     let prob = Math.random();
     if (prob < 0.99) {
+      this.scene.smoke.create(0.75 * 512, 0.25 * 512, "smoke");
+      this.scene.smoke.playAnimation("smokeIdle");
       this.scene.pokemon.visible = false;
-      this.scene.infoMessage.setText("The Pokemon escaped");
+      await this.scene.wait(1);
+      this.scene.smoke.clear(true, true);
+
+      this.scene.infoMessage.setText("It chose to escape!");
       await this.scene.wait(3);
       this.scene.scene.switch("mainScene");
       this.scene.pokemon.visible = true;
@@ -377,7 +409,7 @@ export class BattleScene extends Phaser.Scene {
       this.scene.allCharacters[1].att = Phaser.Math.Between(10, 30);
       this.scene.drawHp(
         0.75 * 512 - 60,
-        0.25 * 512 - 60,
+        0.25 * 512 - 60 - 16,
         this.scene.p2.hp,
         this.scene.p2.maxHp
       );
@@ -430,7 +462,7 @@ export class BattleScene extends Phaser.Scene {
       this.scene.allCharacters[1].att = Phaser.Math.Between(10, 30);
       this.scene.drawHp(
         0.75 * 512 - 60,
-        0.25 * 512 - 60,
+        0.25 * 512 - 60 - 16,
         this.scene.p2.hp,
         this.scene.p2.maxHp
       );
