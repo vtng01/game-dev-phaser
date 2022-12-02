@@ -18,11 +18,13 @@ export class MainScene extends Phaser.Scene {
     this.levelText;
     this.hardObjects;
     this.healText;
+    this.music;
   }
 
   preload() {
     this.load.image("tiles", "assets/RPG Nature Tileset.png");
     this.load.tilemapTiledJSON("map", "assets/map.json");
+    this.load.audio("bgMusic", "assets/SeaShanty.mp3");
     this.load.spritesheet("character", "assets/character.png", {
       frameWidth: 16,
       frameHeight: 20,
@@ -43,6 +45,8 @@ export class MainScene extends Phaser.Scene {
 
   create() {
     this.battleScene = this.scene.manager.getScene("battleScene");
+    this.music = this.sound.add("bgMusic", { loop: true });
+    this.music.play();
     const map = this.make.tilemap({ key: "map" });
     const tileset = map.addTilesetImage(
       "RPG Nature Tileset",
@@ -80,19 +84,6 @@ export class MainScene extends Phaser.Scene {
         setXY: { x: 100, y: 200 + 20 * i, stepX: 16 },
       });
     }
-    // this.hardObjects = this.physics.add.staticGroup();
-    // this.hardObjects.create(50, 150, "bench").setScale(0.5).refreshBody();
-
-    // this.hardObjects.create(100, 50, "bench").setScale(0.5).refreshBody();
-    // this.hardObjects.create(125, 50, "bench").setScale(0.5).refreshBody();
-    // this.hardObjects
-    //   .create(0.75 * 512, 50, "bench")
-    //   .setScale(0.5)
-    //   .refreshBody();
-    // this.hardObjects
-    //   .create(0.75 * 512 + 25, 50, "bench")
-    //   .setScale(0.5)
-    //   .refreshBody();
 
     this.healText = this.add
       .text(0.5 * 512, 50, "", {
@@ -227,6 +218,10 @@ export class MainScene extends Phaser.Scene {
     player.setVelocityX(0);
     player.setVelocityY(0);
     console.log("loading battle scene", this.scene);
+    this.music.pause();
+    if (this.battleScene && this.battleScene.battleSceneMusic) {
+      this.battleScene.battleSceneMusic.play();
+    }
     this.scene.switch("battleScene");
   }
 

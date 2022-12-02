@@ -26,6 +26,7 @@ export class BattleScene extends Phaser.Scene {
     this.pokeball;
     this.pokeballThrowAnimation;
     this.pokeballActivityAnimation;
+    this.battleSceneMusic;
   }
 
   preload() {
@@ -36,6 +37,8 @@ export class BattleScene extends Phaser.Scene {
     this.load.image("pikachu", "assets/pikachu.png");
     this.load.image("cursorHand", "assets/cursor_pointer3D.png");
     this.load.image("pokeball", "assets/pokeball.png");
+    this.load.audio("battleMusic", "assets/battleMusic.mp3");
+
     this.load.spritesheet("pokemons", "assets/pokemons.png", {
       frameWidth: 120,
       frameHeight: 120,
@@ -49,6 +52,8 @@ export class BattleScene extends Phaser.Scene {
 
   create() {
     this.mainScene = this.scene.manager.getScene("mainScene");
+    this.battleSceneMusic = this.sound.add("battleMusic", { loop: true });
+    this.battleSceneMusic.play();
     const battlemap = this.make.tilemap({ key: "battlemap" });
     const tileset2 = battlemap.addTilesetImage(
       "RPG Nature Tileset",
@@ -59,7 +64,7 @@ export class BattleScene extends Phaser.Scene {
       0
     );
     const layer1 = battlemap.createLayer("Tile Layer 2", tileset2, 0, 0);
-    this.p1 = new Character(100, 100);
+    this.p1 = new Character(100, 25);
     this.p2 = new Character(
       Phaser.Math.Between(70, 100),
       Phaser.Math.Between(10, 35)
@@ -254,6 +259,8 @@ export class BattleScene extends Phaser.Scene {
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
 
       this.scene.switch("mainScene");
+      this.battleSceneMusic.play();
+      this.mainScene.music.play();
       this.playerTurnFlag = true;
       this.infoMessage.setText("It's your turn!");
       this.mainScene.score = 0;
@@ -301,6 +308,8 @@ export class BattleScene extends Phaser.Scene {
       this.allCharacters[1].att = Phaser.Math.Between(10, 30);
 
       this.scene.switch("mainScene");
+      this.battleSceneMusic.pause();
+      this.mainScene.music.play();
       this.playerTurnFlag = true;
       this.infoMessage.setText("It's your turn!");
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
@@ -333,6 +342,8 @@ export class BattleScene extends Phaser.Scene {
       this.scene.infoMessage.setText(`...and you got away!`);
       await this.scene.wait(3);
       this.scene.scene.switch("mainScene");
+      this.scene.battleSceneMusic.pause();
+      this.scene.mainScene.music.play();
       this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.scene.mainScene.grassesActive.playAnimation("grassActivity");
       let newHp = Phaser.Math.Between(70, 100);
@@ -464,6 +475,8 @@ export class BattleScene extends Phaser.Scene {
       this.infoMessage.setText("Nani!!! It escaped!!");
       await this.wait(3);
       this.scene.switch("mainScene");
+      this.scene.battleSceneMusic.pause();
+      this.scene.mainScene.music.play();
       this.pokemon.visible = true;
 
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
@@ -527,6 +540,8 @@ export class BattleScene extends Phaser.Scene {
       this.scene.infoMessage.setText(`You gained 50 points!`);
       await this.scene.wait(3);
       this.scene.scene.switch("mainScene");
+      this.scene.battleSceneMusic.pause();
+      this.scene.mainScene.music.play();
       this.scene.pokemon.visible = true;
       this.scene.pokeball.visible = false;
       this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
