@@ -10,7 +10,7 @@ const myGame = new Game({
   physics: {
     default: "arcade",
     arcade: {
-      debug: true,
+      // debug: true,
     },
   },
   scene: [MainScene, BattleScene],
