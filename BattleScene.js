@@ -27,6 +27,7 @@ export class BattleScene extends Phaser.Scene {
     this.pokeballThrowAnimation;
     this.pokeballActivityAnimation;
     this.battleSceneMusic;
+    this.platforms;
   }
 
   preload() {
@@ -38,6 +39,7 @@ export class BattleScene extends Phaser.Scene {
     this.load.image("cursorHand", "assets/cursor_pointer3D.png");
     this.load.image("pokeball", "assets/pokeball.png");
     this.load.audio("battleMusic", "assets/battleMusic.mp3");
+    this.load.image("platform", "assets/platform.png");
 
     this.load.spritesheet("pokemons", "assets/pokemons.png", {
       frameWidth: 120,
@@ -63,7 +65,7 @@ export class BattleScene extends Phaser.Scene {
       0,
       0
     );
-    const layer1 = battlemap.createLayer("Tile Layer 2", tileset2, 0, 0);
+    const layer2 = battlemap.createLayer("Tile Layer 2", tileset2, 0, 0);
     this.p1 = new Character(100, 25);
     this.p2 = new Character(
       Phaser.Math.Between(70, 100),
@@ -71,6 +73,8 @@ export class BattleScene extends Phaser.Scene {
     );
     this.allCharacters[0] = this.p1;
     this.allCharacters[1] = this.p2;
+
+    this.platforms = this.physics.add.group();
 
     const infoBox = this.add
       .image(0.5 * 512, 25, "metalPanel")
@@ -83,6 +87,17 @@ export class BattleScene extends Phaser.Scene {
         wordWrap: { width: 500, useAdvancedWrap: true },
       })
       .setOrigin(0.5);
+
+    this.platforms
+      .create(0.25 * 512, 0.75 * 512 + 100, "platform")
+      .setScale(2)
+      .refreshBody();
+
+    this.platforms
+      .create(0.75 * 512, 0.25 * 512 + 30, "platform")
+      .setScale(2)
+      .refreshBody();
+
     this.player = this.physics.add.sprite(
       0.25 * 512,
       0.75 * 512,
@@ -475,8 +490,8 @@ export class BattleScene extends Phaser.Scene {
       this.infoMessage.setText("Nani!!! It escaped!!");
       await this.wait(3);
       this.scene.switch("mainScene");
-      this.scene.battleSceneMusic.pause();
-      this.scene.mainScene.music.play();
+      this.battleSceneMusic.pause();
+      this.mainScene.music.play();
       this.pokemon.visible = true;
 
       this.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));

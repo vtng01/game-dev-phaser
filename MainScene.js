@@ -23,7 +23,7 @@ export class MainScene extends Phaser.Scene {
 
   preload() {
     this.load.image("tiles", "assets/RPG Nature Tileset.png");
-    this.load.tilemapTiledJSON("map", "assets/map.json");
+    this.load.tilemapTiledJSON("map", "assets/map2.json");
     this.load.audio("bgMusic", "assets/SeaShanty.mp3");
     this.load.spritesheet("character", "assets/character.png", {
       frameWidth: 16,
@@ -57,6 +57,8 @@ export class MainScene extends Phaser.Scene {
       0
     );
     const layer1 = map.createLayer("Tile Layer 1", tileset, 0, 0);
+    const layer2 = map.createLayer("Tile Layer 2", tileset, 0, 0);
+
     this.scoreText = this.add.text(16, 16, `score: ${this.score}`, {
       fontSize: "20px",
       fill: "#000",
