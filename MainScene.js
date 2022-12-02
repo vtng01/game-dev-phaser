@@ -14,6 +14,8 @@ export class MainScene extends Phaser.Scene {
     this.healingFireY = [];
     this.score = 0;
     this.scoreText;
+    this.level = 1;
+    this.levelText;
     this.hardObjects;
     this.healText;
   }
@@ -52,6 +54,11 @@ export class MainScene extends Phaser.Scene {
     );
     const layer1 = map.createLayer("Tile Layer 1", tileset, 0, 0);
     this.scoreText = this.add.text(16, 16, `score: ${this.score}`, {
+      fontSize: "20px",
+      fill: "#000",
+    });
+
+    this.levelText = this.add.text(0.5 * 512, 16, `Lvl: ${this.level}`, {
       fontSize: "20px",
       fill: "#000",
     });
