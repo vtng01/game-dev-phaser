@@ -340,10 +340,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.scene.playerAttackAnimation.play();
     await this.scene.wait(1);
-    // this.scene.playerAttackAnimation.pause();
     this.scene.pokemonReceiveDamageAnimation.play();
-    // await this.scene.wait(0.3);
-    // this.scene.pokemonReceiveDamageAnimation.pause();
 
     this.scene.drawHp(
       0.75 * 512 - 60,
@@ -365,10 +362,13 @@ export class BattleScene extends Phaser.Scene {
     await this.scene.wait(3);
 
     let prob = Math.random();
-    if (prob < 0.3) {
+    if (prob < 0.99) {
+      this.scene.pokemon.visible = false;
       this.scene.infoMessage.setText("The Pokemon escaped");
       await this.scene.wait(3);
       this.scene.scene.switch("mainScene");
+      this.scene.pokemon.visible = true;
+
       this.scene.pokemon.setTexture("pokemons", Phaser.Math.Between(0, 15));
       this.scene.mainScene.grassesActive.playAnimation("grassActivity");
       let newHp = Phaser.Math.Between(70, 100);
