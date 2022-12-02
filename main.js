@@ -1,8 +1,8 @@
-import Phaser, { Game } from "phaser";
+import Phaser from "phaser";
 import { BattleScene } from "/BattleScene";
 import { MainScene } from "./MainScene";
 
-const myGame = new Game({
+const myGame = new Phaser.Game({
   type: Phaser.AUTO,
   width: 512,
   height: 512,
