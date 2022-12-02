@@ -1,4 +1,4 @@
-import "phaser";
+import Phaser from "phaser";
 import { BattleScene } from "/BattleScene";
 import { MainScene } from "./MainScene";
 
